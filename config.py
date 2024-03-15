@@ -9,17 +9,16 @@ class DatabaseManager:
 
 
     def connect(self):
-        self.connecting = 'Connecting to the PostgreSQL database...'
+        self.connecting = 'Connecting to the SQLite database...'
         self.conn = sqlite3.connect("the_overtime.db")
         # create cursor
         self.curs = self.conn.cursor()
         self.curs.execute("""CREATE TABLE IF NOT EXISTS registration (
-                                login_id,
                                 timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                                 user_company_id VARCHAR(255) NOT NULL,
                                 email_address VARCHAR(255) NOT NULL,
                                 password VARCHAR(255) NOT NULL,
-                                permission BOOLEAN NULL,
+                                permission BOOLEAN NOT NULL,
                                 name VARCHAR(255) NULL,
                                 class TEXT NULL,
                                 last_login TIMESTAMP,

@@ -61,6 +61,8 @@ def add_data(group, start, end, strhour, strmin, ehour, emin, month, type, reaso
     
     get_data(table)
 
+#--------------------------------------------------------------------------
+
 def get_data(table):
     global get_fetched_id, Class, overtime
 
@@ -83,6 +85,8 @@ def get_data(table):
     #chart_frame(add_data_win, get_fetched_id)
     #user_card()
 
+#--------------------------------------------------------------------------
+
 def insert_data(datas):
     for i, data in enumerate(datas):
         clean_data = ["" if d is None else d for d in data]
@@ -93,6 +97,7 @@ def insert_data(datas):
             clean_data[14], clean_data[18], clean_data[19]
         ), tags=('unchecked', my_tag))
 
+#--------------------------------------------------------------------------
 
 def logout(win):
      database_manager.curs.execute("UPDATE registration SET permission = false WHERE user_company_id = ?", (get_fetched_id,))

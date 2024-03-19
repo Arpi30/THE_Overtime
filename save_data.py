@@ -63,12 +63,16 @@ def add_data(group, start, end, strhour, strmin, ehour, emin, month, type, reaso
 
 def get_data(table):
     global get_fetched_id, Class, overtime
-    
+
+    #--------------------------------------------------------------------------   
+   
     # Query csak egy főre
 
     query_one_user = "SELECT insertdata.* FROM insertdata JOIN registration ON insertdata.user_company_id = registration.user_company_id WHERE registration.user_company_id = :user_id"
     params_one_user = {"user_id": get_fetched_id}
     
+    #--------------------------------------------------------------------------
+   
     # Query auth level A-val az összes főre
     
     database_manager.curs.execute(query_all if Class == 'A' else query_one_user, params_one_user)

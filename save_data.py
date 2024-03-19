@@ -7,9 +7,12 @@ from tkinter import ttk
 from tkinter import messagebox
 from config import *
 
+table = None
 get_fetched_id = None
 get_fetched_name = None
 database_manager = DatabaseManager()
+
+query_all = "SELECT * FROM insertdata"
 
 def add_data(group, start, end, strhour, strmin, ehour, emin, month, type, reason, comment ):
     if not group.get() or not month.get() or not type.get() or not start.get() or not end.get() or not strhour.get() or not strmin.get() or not ehour.get() or not emin.get() or not reason.get("0.0", "end"):
@@ -45,7 +48,7 @@ def add_data(group, start, end, strhour, strmin, ehour, emin, month, type, reaso
 
     #--------------------------------------------------------------------------
     
-    #máshogy printelem a napokat
+    # máshogy printelem a napokat
         
     diff = f"{day_diff.days} day(s) {hours_diff} hour {min_diff} minutes"
 
@@ -54,5 +57,42 @@ def add_data(group, start, end, strhour, strmin, ehour, emin, month, type, reaso
                  (get_fetched_id, get_fetched_name, group.get(), month.get(), type.get(), start_date_to_postgresql.strftime("%Y-%m-%d"), end_date_to_postgresql.strftime("%Y-%m-%d"), strhour.get(), strmin.get(), ehour.get(), emin.get(), reason.get("0.0", "end"), comment.get("0.0", "end"), int(day_diff.days), hours_diff, min_diff, diff, "false"))
     database_manager.conn.commit()
 
-    delete_data(start, end, strhour, strmin, ehour, emin, reason, comment)
+    # delete_data(start, end, strhour, strmin, ehour, emin, reason, comment)
+    
     get_data(table)
+
+def get_data(table):
+    global get_fetched_id, Class, overtime
+    
+    # Query csak egy főre
+
+    query_one_user = "SELECT insertdata.* FROM insertdata JOIN registration ON insertdata.user_company_id = registration.user_company_id WHERE registration.user_company_id = :user_id"
+    params_one_user = {"user_id": get_fetched_id}
+    
+    # Query auth level A-val az összes főre
+    
+    database_manager.curs.execute(query_all if Class == 'A' else query_one_user, params_one_user)
+    datas = database_manager.curs.fetchall()
+    table.delete(*table.get_children())
+
+    #insert_data(datas)
+    #chart_frame(add_data_win, get_fetched_id)
+    #user_card()
+
+def insert_data(datas):
+    for i, data in enumerate(datas):
+        clean_data = ["" if d is None else d for d in data]
+        my_tag = 'green' if data[19] == "true" else 'red'
+        table.insert("", "end",values=(
+            clean_data[20], clean_data[2], clean_data[3], clean_data[6], clean_data[7],
+            clean_data[4], clean_data[5], clean_data[12], clean_data[13],
+            clean_data[14], clean_data[18], clean_data[19]
+        ), tags=('unchecked', my_tag))
+
+
+def logout(win):
+     database_manager.curs.execute("UPDATE registration SET permission = false WHERE user_company_id = ?", (get_fetched_id,))
+     database_manager.conn.commit()
+     win.destroy()
+
+#save_data()

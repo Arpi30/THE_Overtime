@@ -3,6 +3,8 @@ from config import *
 from datetime import datetime
 from customtkinter import *
 from config import DatabaseManager
+from progressbar import *
+from save_data import *
 
 
 database_manager = DatabaseManager()
@@ -14,7 +16,7 @@ def registration(name, uid, email, password, message, win):
             message.showerror(title="Registration error", message="Fields are mandatory")
             return
 
-        database_manager.curs.execute("INSERT INTO registration (user_company_id, email_address, password, name, class) VALUES (?, ?, ?, ?, ?)", (uid.get(), email.get(), password.get(), name.get(), "F",))
+        database_manager.curs.execute("INSERT INTO registration (user_company_id, email_address, password, name, class, permission) VALUES (?, ?, ?, ?, ?, ?)", (uid.get(), email.get(), password.get(), name.get(), "F", 0))
         database_manager.conn.commit()
         name.delete(0, 'end')
         uid.delete(0, 'end')
@@ -44,10 +46,12 @@ def login(email, password, win):
         progressbar = CTkProgressBar(win, orientation="horizontal", width=150, height=15, mode="determinate", determinate_speed=1, variable=myValc)
         progressbar.place(x=320, y=420)
         login_label.configure(text=f"{database_manager.connecting}", font=("Arial", 12))
+        configure_progressbar(progressbar)
 
         database_manager.curs.execute("UPDATE registration SET permission = true, last_login = ? WHERE email_address = ?", (today, email.get(),))
         database_manager.conn.commit()
         win.destroy()
+        save_data()
     else:
         login_label.configure(text="Invalid login.", text_color=("#f09999"))
         #message.showerror(title="Error", message="Invalid login.")

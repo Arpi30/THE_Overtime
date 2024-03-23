@@ -268,12 +268,48 @@ def delete_data(start, end, strhour, strmin, ehour, emin, reason, comment ):
     reason.delete("0.0", "end")
     comment.delete("0.0", "end")
 
-
 #--------------------------------------------------------------------------
+
 def time():
   stringtime = strftime('%H:%M:? %p')
   clock.configure(text=stringtime)
   clock.after(1000,time)
+
+def toggle_check(event):
+    
+    rowid = table.identify_row(event.y)
+    tags = table.item(rowid, "tags")
+
+#--------------------------------------------------------------------------
+
+    if "checked" in tags:
+        table.item(rowid, tags=('unchecked', my_tag))
+    else:
+        table.item(rowid, tags=('checked', my_tag))
+
+#--------------------------------------------------------------------------
+
+def approve_update(val):
+    
+    sel_row = CTkLabel(add_data_win, text="")
+    sel_row.place(x=630, y=335)
+    selected_rows = table.selection()
+    
+    #--------------------------------------------------------------------------
+
+    if len(selected_rows) == 0:
+        sel_row.configure(text="No rows selected", text_color=("#f09999"), font=("Arial", 18))
+    else:
+        for rowid in selected_rows:
+            tags = table.item(rowid, "tags")
+            if "checked" in tags and Class == "A":
+                get_row = table.item(rowid, "values")[0]
+                database_manager.curs.execute("UPDATE insertdata SET approval = ? WHERE row_id = ?", (val, get_row,))
+                database_manager.conn.commit()
+            else:
+                table.item(rowid, tags=('unchecked', my_tag))
+                return
+    get_data(table)
 
 
 #--------------------------------------------------------------------------

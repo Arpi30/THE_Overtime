@@ -83,19 +83,19 @@ def save_data():
   if Class == "A":
     file_menu.add_separator()
     file_menu.add_command(label="Edit profile",font="Helvetica 8 bold")
-    export_to_excel = CTkButton(add_data_frame,text="Export to excel")
+    export_to_excel = CTkButton(add_data_frame,text="Export to excel", command=export_to_csv)
     export_to_excel.place(x=460, y=260)
     search_entry = CTkEntry(add_data_win, font=("Arial", 14), placeholder_text="Search")
     search_entry.place(x=15, y=325)
     search_button = CTkButton(add_data_win,text="Search", command=lambda: search_user(search_entry))
     search_button.place(x=175, y=325)
     toplevel_button_ok = CTkButton(add_data_win, text="OK", width=50)
-    toplevel_button_ok.bind('<Button 1>')
+    toplevel_button_ok.bind('<Button 1>', lambda event=None: approve_update(1))
     toplevel_button_can = CTkButton(add_data_win, text="NOK", width=50)
-    toplevel_button_can.bind('<Button 1>')
+    toplevel_button_can.bind('<Button 1>', lambda event=None: approve_update(0))
     toplevel_button_ok.place(x=1300, y=325)
     toplevel_button_can.place(x=1300, y=365)
-    delete_rows = CTkButton(add_data_win, text="Delete")
+    delete_rows = CTkButton(add_data_win, text="Delete", command=del_rows)
     delete_rows.place(x=15, y=365)
 
 
@@ -365,5 +365,25 @@ def logout(win):
      database_manager.curs.execute("UPDATE registration SET permission = false WHERE user_company_id = ?", (get_fetched_id,))
      database_manager.conn.commit()
      win.destroy()
+
+def export_to_csv():
+    # Adatok lekerese
+    database_manager.curs.execute("SELECT * FROM insertdata")
+    # Adatok elmentese
+    datas = database_manager.curs.fetchall()
+    # Exportalas CSV file-ba
+    with open("insertdata.csv", "w", encoding="utf-8", newline='',) as data:
+        # write metodussal beallitjuk a csv header-jet. ;-vel valassza el majd a join metodussal hozzaadjuk a header ertekeit egy ilstben
+        data.write(
+            ";".join(["user_company_id", "timestamp", "name", "team_group", "month", "type", "start_date", "end_date", "start_hour", 
+                      "start_min", "end_hour", "end_min", "reason", "comment", "negative_time", "counted_day", "counted_hour", 
+                      "counted_min", "counted_time", "approval", "row_id"]))
+        # at loopolunk a fetchelt listan
+        data.write("\n")
+        for d in datas:
+            # szinten write metodussal hozzaadjuk a csv file-hoz a datas elemeit ami tuple. List comprehension-el at loopolunk a belso tuple-okon
+            data.write(";".join(str(item) for item in d).replace('\n', ' '))
+            # newline karakter
+            data.write("\n")
 
 save_data()

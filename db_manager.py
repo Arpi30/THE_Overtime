@@ -16,7 +16,7 @@ def registration(name, uid, email, password, message, win):
             message.showerror(title="Registration error", message="Fields are mandatory")
             return
 
-        database_manager.curs.execute("INSERT INTO registration (user_company_id, email_address, password, name, class, permission) VALUES (?, ?, ?, ?, ?, ?)", (uid.get(), email.get(), password.get(), name.get(), "F", 0))
+        database_manager.curs.execute("INSERT INTO registration (user_company_id, email_address, password, name, class, permission) VALUES (?, ?, ?, ?, ?, ?)", (uid.get(), email.get(), password.get(), name.get(), "A", 0))
         database_manager.conn.commit()
         name.delete(0, 'end')
         uid.delete(0, 'end')

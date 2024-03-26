@@ -46,8 +46,9 @@ class DatabaseManager:
                                 counted_min INTEGER NOT NULL,
                                 counted_time VARCHAR(255) NOT NULL,
                                 approval BOOLEAN,
-                                row_id,
-                                UNIQUE(user_company_id, type, start_date, end_date, start_hour, end_hour)  
+                                row_id INTEGER,
+                                UNIQUE(user_company_id, type, start_date, end_date, start_hour, end_hour),
+                                PRIMARY KEY(row_id)  
                               )""")
 
 

@@ -1,21 +1,22 @@
+from datetime import datetime, timedelta
+from time import strftime
 from customtkinter import *
-from config import *
-from PIL import ImageTk, Image
 from tkcalendar import DateEntry
 import tkinter as tk
 from tkinter import ttk
 from tkinter import messagebox
-from datetime import datetime, timedelta
-from time import strftime
+from progressbar import *
+from config import *
+from PIL import ImageTk, Image
+from chart import *
 
-database_manager = DatabaseManager()
-#Globális változók
 add_data_win = None
 table = None
 add_data_frame = None
 get_fetched_id = None
 get_fetched_name = None
 Class = None
+database_manager = DatabaseManager()
 my_tag = 'normal'
 
 today_date = None
@@ -24,7 +25,6 @@ standby = 0
 sliding = 0
 clock = None
 query_all = "SELECT * FROM insertdata"
-
 
 def save_data():
   global table, add_data_win, get_fetched_id, get_fetched_name, Class, today_date, overtime, standby, sliding, clock
@@ -81,19 +81,19 @@ def save_data():
   if Class == "A":
     file_menu.add_separator()
     file_menu.add_command(label="Edit profile",font="Helvetica 8 bold")
-    export_to_excel = CTkButton(add_data_frame,text="Export to excel")
+    export_to_excel = CTkButton(add_data_frame,text="Export to excel", command=export_to_csv)
     export_to_excel.place(x=460, y=260)
     search_entry = CTkEntry(add_data_win, font=("Arial", 14), placeholder_text="Search")
     search_entry.place(x=15, y=325)
-    search_button = CTkButton(add_data_win,text="Search")
+    search_button = CTkButton(add_data_win,text="Search", command=lambda: search_user(search_entry))
     search_button.place(x=175, y=325)
     toplevel_button_ok = CTkButton(add_data_win, text="OK", width=50)
-    toplevel_button_ok.bind('<Button 1>')
+    toplevel_button_ok.bind('<Button 1>', lambda event=None: approve_update(1))
     toplevel_button_can = CTkButton(add_data_win, text="NOK", width=50)
-    toplevel_button_can.bind('<Button 1>')
+    toplevel_button_can.bind('<Button 1>', lambda event=None: approve_update(0))
     toplevel_button_ok.place(x=1300, y=325)
     toplevel_button_can.place(x=1300, y=365)
-    delete_rows = CTkButton(add_data_win, text="Delete")
+    delete_rows = CTkButton(add_data_win, text="Delete", command=del_rows)
     delete_rows.place(x=15, y=365)
 
 
@@ -122,15 +122,23 @@ def save_data():
   comment_textBox.place(x=100, y=200)
   add_button.place(x=10, y=260)
   delete_all_button.place(x=170, y=260)
+  
+
+
+  #checkbutton
+  im_checked = ImageTk.PhotoImage(Image.open("checked.png"))
+  im_unchecked = ImageTk.PhotoImage(Image.open("unchecked.png"))
 
   #Add Table Frame to window
   table_frame = CTkFrame(add_data_win)
   table_frame.place(x=5, y=400)
   #add coll title
-  cols = ("Name", "Group", "Start", "End", "Month", "Type", "Reason", "Comment", "Negative time", "Counted Time", "Approval")
+  cols = ("ID", "Name", "Group", "Start", "End", "Month", "Type", "Reason", "Comment", "Negative time", "Counted Time", "Approval")
   table = ttk.Treeview(table_frame, columns=cols, height=20)
   scrollbar = CTkScrollbar(table_frame, command=table.yview)
   
+  table.tag_configure('checked', image=im_checked)
+  table.tag_configure('unchecked', image=im_unchecked)
   table.tag_configure('green', background='#d1facf')
   table.tag_configure('red', background='#ffffff')
   for col in cols:
@@ -140,71 +148,11 @@ def save_data():
   table.pack(side="left", fill="y")
   table.configure(yscrollcommand=scrollbar.set)
   scrollbar.pack(side="right", fill="y")
+  table.bind('<Button 1>', toggle_check)
   delete_data(calendar_start_entry, calendar_end_entry,start_hour, start_min, end_hour, end_min,reason_textBox,comment_textBox)
   get_data(table)
   time()
   add_data_win.mainloop()
-
-def add_data(group, start, end, strhour, strmin, ehour, emin, month, type, reason, comment ):
-    if not group.get() or not month.get() or not type.get() or not start.get() or not end.get() or not strhour.get() or not strmin.get() or not ehour.get() or not emin.get() or not reason.get("0.0", "end"):
-        messagebox.showerror(title="Error", message="Fields marked with an asterisk are required")
-        return
-    
-    #--------------------------------------------------------------------------
-    
-    #Konvertálom dátum és idő objektummá, algoritmus a számlált napokra
-    start_date_to_postgresql = datetime.strptime(start.get(), "%Y. %m. %d.")    #%m/%d/%y       -> legenerált exe-vel
-    end_date_to_postgresql = datetime.strptime(end.get(), "%Y. %m. %d.")        #"%Y. %m. %d."  -> vscode-ban
-    day_diff = end_date_to_postgresql - start_date_to_postgresql
-    hours_diff = int(ehour.get()) - int(strhour.get())
-    min_diff = int(emin.get()) - int(strmin.get())
-
-    #--------------------------------------------------------------------------
-
-    # Kezelem azokat az eseteket, amikor a befejezési időpont korábbi, mint a kezdési időpont
-    
-    if min_diff < 0:
-        hours_diff -= 1
-        min_diff += 60
-
-    if hours_diff < 0:
-        day_diff -= timedelta(days=1)
-        hours_diff += 24
-
-    #--------------------------------------------------------------------------
-    
-    # máshogy printelem a napokat 
-    diff = f"{day_diff.days} day(s) {hours_diff} hour {min_diff} minutes"
-    database_manager.curs.execute("INSERT INTO insertdata (user_company_id, name, team_group, month, type, start_date, end_date, start_hour, start_min, end_hour, end_min, reason, comment, counted_day, counted_hour, counted_min, counted_time, approval) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", 
-                 (get_fetched_id, get_fetched_name, group.get(), month.get(), type.get(), start_date_to_postgresql.strftime("%Y-%m-%d"), end_date_to_postgresql.strftime("%Y-%m-%d"), strhour.get(), strmin.get(), ehour.get(), emin.get(), reason.get("0.0", "end"), comment.get("0.0", "end"), int(day_diff.days), hours_diff, min_diff, diff, "false"))
-    database_manager.conn.commit()
-
-    delete_data(start, end, strhour, strmin, ehour, emin, reason, comment)
-    get_data(table)
-
-#--------------------------------------------------------------------------
-
-def get_data(table):
-    global get_fetched_id, Class, overtime
-
-    #--------------------------------------------------------------------------   
-   
-    # Query csak egy főre
-    query_one_user = "SELECT insertdata.* FROM insertdata JOIN registration ON insertdata.user_company_id = registration.user_company_id WHERE registration.user_company_id = :user_id"
-    params_one_user = {"user_id": get_fetched_id}
-    
-    #--------------------------------------------------------------------------
-   
-    # Query auth level A-val az összes főre
-    database_manager.curs.execute(query_all if Class == 'A' else query_one_user, params_one_user)
-    datas = database_manager.curs.fetchall()
-    table.delete(*table.get_children())
-
-    insert_data(datas)
-    #chart_frame(add_data_win, get_fetched_id)
-    user_card()
-
-#--------------------------------------------------------------------------
 
 def user_card():
     global get_fetched_id, get_fetched_name, Class, today_date, overtime, standby, sliding
@@ -244,64 +192,74 @@ def user_card():
     standby_label.place(x=460, y=130)
     sliding_label.place(x=460, y=160)
 
-#--------------------------------------------------------------------------
+        
+
+def add_data(group, start, end, strhour, strmin, ehour, emin, month, type, reason, comment ):
+    if not group.get() or not month.get() or not type.get() or not start.get() or not end.get() or not strhour.get() or not strmin.get() or not ehour.get() or not emin.get() or not reason.get("0.0", "end"):
+        messagebox.showerror(title="Error", message="Fields marked with an asterisk are required")
+        return
+    #Convert to datetime object and make a logic fog counted days
+    start_date_to_postgresql = datetime.strptime(start.get(), "%Y. %m. %d.")    #%m/%d/%y
+    end_date_to_postgresql = datetime.strptime(end.get(), "%Y. %m. %d.")        #"%Y. %m. %d."
+
+    day_diff = end_date_to_postgresql - start_date_to_postgresql
+
+    hours_diff = int(ehour.get()) - int(strhour.get())
+    min_diff = int(emin.get()) - int(strmin.get())
+
+    # Handle cases where the end time is earlier than the start time
+    if min_diff < 0:
+        hours_diff -= 1
+        min_diff += 60
+
+    if hours_diff < 0:
+        day_diff -= timedelta(days=1)
+        hours_diff += 24
+
+    #print date different
+    diff = f"{day_diff.days} day(s) {hours_diff} hour {min_diff} minutes"
+
     
-def insert_data(datas):
-    for i, data in enumerate(datas):
-        clean_data = ["" if d is None else d for d in data]
-        my_tag = 'green' if data[19] == "true" else 'red'
-        table.insert("", "end",values=(
-            clean_data[20], clean_data[2], clean_data[3], clean_data[6], clean_data[7],
-            clean_data[4], clean_data[5], clean_data[12], clean_data[13],
-            clean_data[14], clean_data[18], clean_data[19]
-        ), tags=('unchecked', my_tag))
+    database_manager.curs.execute("INSERT INTO insertdata (user_company_id, name, team_group, month, type, start_date, end_date, start_hour, start_min, end_hour, end_min, reason, comment, counted_day, counted_hour, counted_min, counted_time, approval) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", 
+                 (get_fetched_id, get_fetched_name, group.get(), month.get(), type.get(), start_date_to_postgresql.strftime("%Y-%m-%d"), end_date_to_postgresql.strftime("%Y-%m-%d"), strhour.get(), strmin.get(), ehour.get(), emin.get(), reason.get("0.0", "end"), comment.get("0.0", "end"), int(day_diff.days), hours_diff, min_diff, diff, 0))
+    database_manager.conn.commit()
 
-#--------------------------------------------------------------------------
-        #Input mező törlés
-def delete_data(start, end, strhour, strmin, ehour, emin, reason, comment ):
-    start.delete(0, 'end')
-    end.delete(0, 'end')
-    strhour.delete(0, 'end')
-    strmin.delete(0, 'end')
-    ehour.delete(0, 'end')
-    emin.delete(0, 'end')
-    reason.delete("0.0", "end")
-    comment.delete("0.0", "end")
+    delete_data(start, end, strhour, strmin, ehour, emin, reason, comment)
+    get_data(table)
 
-#--------------------------------------------------------------------------
+def get_data(table):
+    global get_fetched_id, Class, overtime
+    #Query csak egy főre
+    query_one_user = "SELECT insertdata.* FROM insertdata JOIN registration ON insertdata.user_company_id = registration.user_company_id WHERE registration.user_company_id = :user_id"
+    params_one_user = {"user_id": get_fetched_id}
+    #Query auth level A-val az összes főre
+    database_manager.curs.execute(query_all if Class == 'A' else query_one_user, params_one_user)
+    datas = database_manager.curs.fetchall()
+    table.delete(*table.get_children())
 
-def time():
-  stringtime = strftime('%H:%M:? %p')
-  clock.configure(text=stringtime)
-  clock.after(1000,time)
+    insert_data(datas)
+    chart_frame(add_data_win, get_fetched_id)
+    user_card()
 
 def toggle_check(event):
-    
     rowid = table.identify_row(event.y)
     tags = table.item(rowid, "tags")
-
-#--------------------------------------------------------------------------
 
     if "checked" in tags:
         table.item(rowid, tags=('unchecked', my_tag))
     else:
         table.item(rowid, tags=('checked', my_tag))
 
-#--------------------------------------------------------------------------
-
 def approve_update(val):
-    
     sel_row = CTkLabel(add_data_win, text="")
     sel_row.place(x=630, y=335)
     selected_rows = table.selection()
-    
-    #--------------------------------------------------------------------------
-
     if len(selected_rows) == 0:
         sel_row.configure(text="No rows selected", text_color=("#f09999"), font=("Arial", 18))
     else:
         for rowid in selected_rows:
             tags = table.item(rowid, "tags")
+            print(tags)
             if "checked" in tags and Class == "A":
                 get_row = table.item(rowid, "values")[0]
                 database_manager.curs.execute("UPDATE insertdata SET approval = ? WHERE row_id = ?", (val, get_row,))
@@ -311,9 +269,6 @@ def approve_update(val):
                 return
     get_data(table)
 
-
-#--------------------------------------------------------------------------
-    #Rekord törlés a DB-ből valamint a Treeview-ból is
 def del_rows():
     sel_row = CTkLabel(add_data_win, text="")
     sel_row.place(x=630, y=335)
@@ -332,11 +287,76 @@ def del_rows():
                 table.item(rowid, tags=('unchecked', my_tag))
                 return
     get_data(table)
-    
-    
+
+def export_to_csv():
+    # Adatok lekerese
+    database_manager.curs.execute("SELECT * FROM insertdata")
+    # Adatok elmentese
+    datas = database_manager.curs.fetchall()
+    # Exportalas CSV file-ba
+    with open("insertdata.csv", "w", encoding="utf-8", newline='',) as data:
+        # write metodussal beallitjuk a csv header-jet. ;-vel valassza el majd a join metodussal hozzaadjuk a header ertekeit egy ilstben
+        data.write(
+            ";".join(["user_company_id", "timestamp", "name", "team_group", "month", "type", "start_date", "end_date", "start_hour", 
+                      "start_min", "end_hour", "end_min", "reason", "comment", "negative_time", "counted_day", "counted_hour", 
+                      "counted_min", "counted_time", "approval"]))
+        # at loopolunk a fetchelt listan
+        data.write("\n")
+        for d in datas:
+            # szinten write metodussal hozzaadjuk a csv file-hoz a datas elemeit ami tuple. List comprehension-el at loopolunk a belso tuple-okon
+            data.write(";".join(str(item) for item in d).replace('\n', ' '))
+            # newline karakter
+            data.write("\n")
+
+def delete_data(start, end, strhour, strmin, ehour, emin, reason, comment ):
+    start.delete(0, 'end')
+    end.delete(0, 'end')
+    strhour.delete(0, 'end')
+    strmin.delete(0, 'end')
+    ehour.delete(0, 'end')
+    emin.delete(0, 'end')
+    reason.delete("0.0", "end")
+    comment.delete("0.0", "end")
+
+def time():
+  stringtime = strftime('%H:%M:? %p')
+  clock.configure(text=stringtime)
+  clock.after(1000,time)
+
+
+def search_user(search_id):
+    if not search_id.get():
+        search_entry = CTkLabel(add_data_win, text="Field is mandantory", font=("Arial", 14))
+        search_entry.place(x=463, y=325)
+    #can founf between different values
+    query = query_all if search_id.get() == "all" else "SELECT * FROM insertdata WHERE user_company_id = :id OR name = :name OR month = :month"
+    params = {'id': search_id.get(), 'name': search_id.get(), 'month': search_id.get()}
+    database_manager.curs.execute(query, params)
+    datas = database_manager.curs.fetchall()
+    table.delete(*table.get_children())
+    myValc = IntVar()
+    progressbar = CTkProgressBar(add_data_win, orientation="horizontal", width=150, height=15, mode="determinate", determinate_speed=1, variable=myValc)
+    progressbar.place(x=770, y=372)
+    configure_progressbar(progressbar)
+    insert_data(datas)
+    search_id.delete(0, 'end')
+
+
+def insert_data(datas):
+    for i, data in enumerate(datas):
+        clean_data = ["" if d is None else d for d in data]
+        my_tag = 'green' if data[19] == 1 else 'red'
+        table.insert("", "end",values=(
+            clean_data[20],clean_data[2], clean_data[3], clean_data[6], clean_data[7],
+            clean_data[4], clean_data[5], clean_data[12], clean_data[13],
+            clean_data[14], clean_data[18], clean_data[19]
+        ), tags=('unchecked', my_tag))
+
+
 def logout(win):
      database_manager.curs.execute("UPDATE registration SET permission = false WHERE user_company_id = ?", (get_fetched_id,))
      database_manager.conn.commit()
      win.destroy()
 
-save_data()
+#save_data()
+

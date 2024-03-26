@@ -1,21 +1,21 @@
 Arpi:
-  progressbar.py
+  progressbar.py                                                    kész
   save_data.py: 
     save_data() FE -> menu - gombok, if class == A,   prio1         kész
-    search_user(), 
-    time(), 
+    search_user(),                                                  kész
+    time(),                                                         kész
     delete_data(),      prio1                                       kész
     del_rows(),         prio1                                       kész
     export_to_csv()
 
 Máté:
-  chart.py
+  chart.py                                                          kész
   edit_profile.py
   save_data.py: 
     add_data(),       prio1                                         kész
-    user_card(), 
+    user_card(),                                                    kész                                         
     get_data(),       prio1                                         kész
     logout(),         prio1                                         kész
     insert_data(),    prio1                                         kész
-    toggle_check(),
-    approve_update(),
+    toggle_check(),                                                 kész
+    approve_update(),                                               kész

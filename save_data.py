@@ -6,7 +6,9 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter import messagebox
 from datetime import datetime, timedelta
+from chart import *
 from time import strftime
+from progressbar import *
 
 database_manager = DatabaseManager()
 #Globális változók
@@ -85,7 +87,7 @@ def save_data():
     export_to_excel.place(x=460, y=260)
     search_entry = CTkEntry(add_data_win, font=("Arial", 14), placeholder_text="Search")
     search_entry.place(x=15, y=325)
-    search_button = CTkButton(add_data_win,text="Search")
+    search_button = CTkButton(add_data_win,text="Search", command=lambda: search_user(search_entry))
     search_button.place(x=175, y=325)
     toplevel_button_ok = CTkButton(add_data_win, text="OK", width=50)
     toplevel_button_ok.bind('<Button 1>')
@@ -123,6 +125,10 @@ def save_data():
   add_button.place(x=10, y=260)
   delete_all_button.place(x=170, y=260)
 
+  #checkbutton
+  im_checked = ImageTk.PhotoImage(Image.open("checked.png"))
+  im_unchecked = ImageTk.PhotoImage(Image.open("unchecked.png"))
+
   #Add Table Frame to window
   table_frame = CTkFrame(add_data_win)
   table_frame.place(x=5, y=400)
@@ -130,7 +136,9 @@ def save_data():
   cols = ("Name", "Group", "Start", "End", "Month", "Type", "Reason", "Comment", "Negative time", "Counted Time", "Approval")
   table = ttk.Treeview(table_frame, columns=cols, height=20)
   scrollbar = CTkScrollbar(table_frame, command=table.yview)
-  
+
+  table.tag_configure('checked', image=im_checked)
+  table.tag_configure('unchecked', image=im_unchecked)
   table.tag_configure('green', background='#d1facf')
   table.tag_configure('red', background='#ffffff')
   for col in cols:
@@ -140,6 +148,7 @@ def save_data():
   table.pack(side="left", fill="y")
   table.configure(yscrollcommand=scrollbar.set)
   scrollbar.pack(side="right", fill="y")
+  table.bind('<Button 1>', toggle_check)
   delete_data(calendar_start_entry, calendar_end_entry,start_hour, start_min, end_hour, end_min,reason_textBox,comment_textBox)
   get_data(table)
   time()
@@ -201,7 +210,7 @@ def get_data(table):
     table.delete(*table.get_children())
 
     insert_data(datas)
-    #chart_frame(add_data_win, get_fetched_id)
+    chart_frame(add_data_win, get_fetched_id)
     user_card()
 
 #--------------------------------------------------------------------------
@@ -244,6 +253,24 @@ def user_card():
     standby_label.place(x=460, y=130)
     sliding_label.place(x=460, y=160)
 
+#--------------------------------------------------------------------------
+    
+def search_user(search_id):
+    if not search_id.get():
+        search_entry = CTkLabel(add_data_win, text="Field is mandantory", font=("Arial", 14))
+        search_entry.place(x=463, y=325)
+    #can founf between different values
+    query = query_all if search_id.get() == "all" else "SELECT * FROM insertdata WHERE user_company_id = :id OR name = :name OR month = :month"
+    params = {'id': search_id.get(), 'name': search_id.get(), 'month': search_id.get()}
+    database_manager.curs.execute(query, params)
+    datas = database_manager.curs.fetchall()
+    table.delete(*table.get_children())
+    myValc = IntVar()
+    progressbar = CTkProgressBar(add_data_win, orientation="horizontal", width=150, height=15, mode="determinate", determinate_speed=1, variable=myValc)
+    progressbar.place(x=770, y=372)
+    configure_progressbar(progressbar)
+    insert_data(datas)
+    search_id.delete(0, 'end')
 #--------------------------------------------------------------------------
     
 def insert_data(datas):

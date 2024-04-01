@@ -1,5 +1,6 @@
 import time
 
+#Bejelentkezés utáni progressbar
 def configure_progressbar(progressbar):
     num_of_steps = 100
     progressbar.set(0)

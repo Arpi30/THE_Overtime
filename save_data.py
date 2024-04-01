@@ -9,6 +9,7 @@ from progressbar import *
 from config import *
 from PIL import ImageTk, Image
 from chart import *
+from edit_profile import *
 
 add_data_win = None
 table = None
@@ -65,7 +66,7 @@ def save_data():
   end_min = ttk.Spinbox(add_data_frame, from_=0, to=60, textvariable=end_min_str, width=3, value=0)
   group_omenu= CTkOptionMenu(add_data_frame, values=["App1", "App2"])
   month_omenu= CTkOptionMenu(add_data_frame, values=["Január", "Február", "Március", "Április", "Május", "Június", "Július", "Augusztus", "Szeptember", "Október", "November", "December"])
-  type_omenu= CTkOptionMenu(add_data_frame, values=["Túlóra", "Készenlét", "Csúszó"])
+  type_omenu= CTkOptionMenu(add_data_frame, values=["Overtime", "Standby", "Sliding"])
   calendar_start_entry = DateEntry(add_data_frame, selectmode = 'day', year = 2024, month = 1, day = 1, background='darkblue', foreground='white', borderwidth=2)
   calendar_end_entry = DateEntry(add_data_frame, selectmode = 'day', year = 2024, month = 1, day = 1, background='darkblue', foreground='white', borderwidth=2)
   reason_textBox = CTkTextbox(add_data_frame, width=250, height=30, border_width=1)
@@ -80,7 +81,7 @@ def save_data():
                                                                               month_omenu, type_omenu, reason_textBox,comment_textBox))
   if Class == "A":
     file_menu.add_separator()
-    file_menu.add_command(label="Edit profile",font="Helvetica 8 bold")
+    file_menu.add_command(label="Edit profile",font="Helvetica 8 bold", command=lambda: edit_profile(get_fetched_id))
     export_to_excel = CTkButton(add_data_frame,text="Export to excel", command=export_to_csv)
     export_to_excel.place(x=460, y=260)
     search_entry = CTkEntry(add_data_win, font=("Arial", 14), placeholder_text="Search")
@@ -159,9 +160,9 @@ def user_card():
     database_manager.curs.execute('''SELECT registration.user_company_id, 
                                                 registration.name, registration.class, 
                                                 registration.last_login, 
-                                                COALESCE(COUNT(CASE WHEN insertdata.type = 'Túlóra' THEN 1 END),0), 
-                                                COALESCE(COUNT(CASE WHEN insertdata.type = 'Készenlét' THEN 1 END),0), 
-                                                COALESCE(COUNT(CASE WHEN insertdata.type = 'Csúszó' THEN 1 END),0) 
+                                                COALESCE(COUNT(CASE WHEN insertdata.type = 'Overtime' THEN 1 END),0), 
+                                                COALESCE(COUNT(CASE WHEN insertdata.type = 'Standby' THEN 1 END),0), 
+                                                COALESCE(COUNT(CASE WHEN insertdata.type = 'Sliding' THEN 1 END),0) 
                                         FROM registration 
                                         LEFT JOIN insertdata ON registration.user_company_id = insertdata.user_company_id 
                                         WHERE registration.permission = true 
@@ -319,7 +320,7 @@ def delete_data(start, end, strhour, strmin, ehour, emin, reason, comment ):
     comment.delete("0.0", "end")
 
 def time():
-  stringtime = strftime('%H:%M:? %p')
+  stringtime = strftime('%H:%M:%S %p')
   clock.configure(text=stringtime)
   clock.after(1000,time)
 

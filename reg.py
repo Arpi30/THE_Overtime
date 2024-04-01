@@ -3,7 +3,8 @@ from tkinter import messagebox
 from db_manager import *
 
 def user_reg():
-    log = CTk()
+    log = CTkToplevel()
+    log.grab_set()
     log.title("Registration")
     log.geometry('500x500')
     set_appearance_mode("light")

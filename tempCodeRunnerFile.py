@@ -1,1 +1,1 @@
-my_tag
+database_manager = DatabaseManager()

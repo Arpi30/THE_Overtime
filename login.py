@@ -3,18 +3,22 @@ from reg import *
 from db_manager import *
 
 def login_ui():
+  #Bejelentkezési felület létrehozása, elnevezés, méret, cím
   app = CTk()
   app.title("Login employee manager")
   app.geometry('750x550')
   set_appearance_mode("light")
   app.resizable(False, False)
 
+  #Bejelentkezési adatok Label létrehozása és elhelyezése
   login_label = CTkLabel(app, text="Login", font=("Arial", 30))
   email_label = CTkLabel(app, text="Email", font=("Arial", 16, 'bold'))
   password_label = CTkLabel(app, text="Password", font=("Arial", 16, 'bold'))
   email_entry = CTkEntry(app, font=("Arial", 16))
   password_entry = CTkEntry(app, show="*", font=("Arial", 16))
+  #Bejelentkezés függvény hozzáadása a gombhoz
   login_button = CTkButton(app, text="Login", font=("Arial", 16), command=lambda: login(email_entry, password_entry, app))
+  #regisztrációs függvény hozzáadása a gombhoz
   reg_button = CTkButton(app, text="Registration", font=("Arial", 16), command=user_reg)
 
   login_label.place(relx=0.5, rely=0.3, anchor="center")

@@ -2,7 +2,9 @@ from customtkinter import *
 from tkinter import messagebox
 from db_manager import *
 
+#Bejelentkezési felület létrehozása
 def user_reg():
+    #Ablak inicializálása, elnevezése, méretezése, fókusz
     log = CTkToplevel()
     log.grab_set()
     log.title("Registration")
@@ -10,6 +12,7 @@ def user_reg():
     set_appearance_mode("light")
     log.resizable(False, False)
 
+    #A bejelentkezési Label-ek létrehozása és elhelyezése
     reg_label = CTkLabel(log, text="Registration", font=("Arial", 30))
     name_label = CTkLabel(log, text="Name", font=("Arial", 16, 'bold'))
     reg_id_label = CTkLabel(log, text="User ID", font=("Arial", 16, 'bold'))
@@ -19,6 +22,7 @@ def user_reg():
     reg_id_entry = CTkEntry(log, font=("Arial", 16))
     reg_email_entry = CTkEntry(log, font=("Arial", 16))
     reg_password_entry = CTkEntry(log, show="*", font=("Arial", 16))
+    #Bejelentkezési gomb létrehozása és a registration függvényt hozzáadása paraméterekkel
     reg_button = CTkButton(log, text="Registration", font=("Arial", 16), command=lambda: registration(reg_name_entry, reg_id_entry, reg_email_entry, reg_password_entry, messagebox, log))
 
     reg_label.place(relx=0.5, rely=0.2, anchor="center")

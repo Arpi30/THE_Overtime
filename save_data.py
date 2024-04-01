@@ -26,6 +26,7 @@ standby = 0
 sliding = 0
 clock = None
 query_all = "SELECT * FROM insertdata"
+cols = ("ID", "Name", "Group", "Start", "End", "Month", "Type", "Reason", "Comment", "Negative time", "Counted Time", "Approval")
 
 def save_data():
   global table, add_data_win, get_fetched_id, get_fetched_name, Class, today_date, overtime, standby, sliding, clock
@@ -45,8 +46,13 @@ def save_data():
   #Add Data Frame into window
   add_data_frame = CTkFrame(add_data_win, width=800, height=300, border_width=3, fg_color=("#edebeb"))
   add_data_frame.place(x=5, y=5)
+  #Add Table Frame to window
+  table_frame = CTkFrame(add_data_win)
+  table_frame.place(x=5, y=400)
+  #add coll title
+  table = ttk.Treeview(table_frame, columns=cols, height=20)
+  scrollbar = CTkScrollbar(table_frame, command=table.yview)
   #Add data Frame label
-
   clock = CTkLabel(add_data_frame, font=("Calibri", 40))
   group_label= CTkLabel(add_data_frame, text="* Group", font=("Arial", 16))
   month_label= CTkLabel(add_data_frame, text="* Month", font=("Arial", 16))
@@ -96,6 +102,7 @@ def save_data():
     toplevel_button_can.place(x=1300, y=365)
     delete_rows = CTkButton(add_data_win, text="Delete", command=del_rows)
     delete_rows.place(x=15, y=365)
+    table.bind("<Double-Button-1>", lambda event: update_data(event, table))
 
 
   #Place label and Entry on the Frame
@@ -129,14 +136,6 @@ def save_data():
   #checkbutton
   im_checked = ImageTk.PhotoImage(Image.open("checked.png"))
   im_unchecked = ImageTk.PhotoImage(Image.open("unchecked.png"))
-
-  #Add Table Frame to window
-  table_frame = CTkFrame(add_data_win)
-  table_frame.place(x=5, y=400)
-  #add coll title
-  cols = ("ID", "Name", "Group", "Start", "End", "Month", "Type", "Reason", "Comment", "Negative time", "Counted Time", "Approval")
-  table = ttk.Treeview(table_frame, columns=cols, height=20)
-  scrollbar = CTkScrollbar(table_frame, command=table.yview)
   
   table.tag_configure('checked', image=im_checked)
   table.tag_configure('unchecked', image=im_unchecked)
@@ -152,6 +151,8 @@ def save_data():
   table.bind('<Button 1>', toggle_check)
   delete_data(calendar_start_entry, calendar_end_entry,start_hour, start_min, end_hour, end_min,reason_textBox,comment_textBox)
   get_data(table)
+  refresh = CTkButton(add_data_win, text="Refresh", command=get_data(table))
+  refresh.place(x=175, y=365)
   time()
   add_data_win.mainloop()
 
@@ -353,11 +354,60 @@ def insert_data(datas):
             clean_data[14], clean_data[18], clean_data[19]
         ), tags=('unchecked', my_tag))
 
+def update_data(event, table):
+    #Cella kijelölése
+    region_clicked = table.identify_region(event.x, event.y)
+    if region_clicked not in ("cell"):
+      return
+    
+    #kiválasztott elem
+    column = table.identify_column(event.x)
+    column_index = int(column[1:]) - 1
+    selected_iid = table.focus()
+    selected_values = table.item(selected_iid).get("values")[column_index]
+    column_box = table.bbox(selected_iid, column)
+
+    #Entry widget elhelyezése a módsoításhoz
+    entry_edit = ttk.Entry(table, width=column_box[2])
+    #A tartalom elhelyezése az Entry widget-ben
+    entry_edit.editing_column_index = column_index
+    entry_edit.editing_item_iid = selected_iid
+    entry_edit.insert(0, selected_values)
+    entry_edit.select_range(0, 'end')
+    entry_edit.focus()
+    entry_edit.place(x=column_box[0], y=column_box[1], w=column_box[2], h=column_box[3])
+    #Focus elvesztése esemény hozzáadása
+    entry_edit.bind("<FocusOut>", focus_out)
+    entry_edit.bind("<Return>", lambda event: enter_pressed(event, table))
+
+
+def focus_out(event):
+   #Fókusz levélete az adott widget-ről
+   event.widget.destroy()
+
+def enter_pressed(event, table):
+    #Új szöveg
+    new_text = event.widget.get()
+
+    #Szelektálás iid és index alapján
+    selected_iid = event.widget.editing_item_iid
+    column_index = event.widget.editing_column_index
+
+    #Az aktuális szöveg kiválasztása
+    current_values = table.item(selected_iid).get("values")
+
+    #A cella update-elése
+    current_values[column_index] = new_text
+    table.item(selected_iid, values=current_values)
+
+    #DB update-elése
+
+    event.widget.destroy()
+
 
 def logout(win):
      database_manager.curs.execute("UPDATE registration SET permission = false WHERE user_company_id = ?", (get_fetched_id,))
      database_manager.conn.commit()
      win.destroy()
 
-#save_data()
-
+save_data()

@@ -12,7 +12,7 @@ def chart_frame(win, fetched_id):
     chart_filter_frame = CTkFrame(win, width=550, height=300, border_width=3, fg_color=("#edebeb"))
     chart_filter_frame.place(x=845, y=5)
     #Button és Option gomb lérehozása, elhelyezése
-    type_filter_omenu= CTkOptionMenu(chart_filter_frame, values=["Túlóra", "Készenlét", "Csúszó"])
+    type_filter_omenu= CTkOptionMenu(chart_filter_frame, values=["Overtime", "Standby", "Sliding"])
     filter_set_button = CTkButton(chart_filter_frame, text="Set", command= lambda: filter(type_filter_omenu, chart_filter_frame, fetched_id))
     type_filter_omenu.place(relx=0.35, rely=0.85)
     filter_set_button.place(relx=0.65, rely=0.85)

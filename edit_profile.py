@@ -4,10 +4,11 @@ from customtkinter import *
 
 database_manager = DatabaseManager()
 edit_profile_table = None
+edit = None
 
 def edit_profile(fetched_id):
     #globális változó
-    global edit_profile_table
+    global edit_profile_table, edit
     #profil szerkesztő ablak inicializálása: focus,cím,méret,mód
     edit = CTkToplevel()
     edit.grab_set()
@@ -103,13 +104,14 @@ def update_profile(event, table):
    entry_edit.place(x=column_box[0], y=column_box[1], w=column_box[2], h=column_box[3])
    #Focus elvesztése esemény hozzáadása
    entry_edit.bind("<FocusOut>", focus_out)
-   entry_edit.bind("<Return>", lambda event: enter_pressed(event, table, selected_values))
+   entry_edit.bind("<Return>", lambda event: enter_pressed(event, table))
 
 def focus_out(event):
    #Fókusz levélete az adott widget-ről
    event.widget.destroy()
 
-def enter_pressed(event, table, selected_values):
+def enter_pressed(event, table):
+   global edit
    #Új szöveg
    new_text = event.widget.get()
 
@@ -124,15 +126,23 @@ def enter_pressed(event, table, selected_values):
    current_values[column_index] = new_text
    table.item(selected_iid, values=current_values)
 
+   update_label = CTkLabel(edit, text="", font=("Arial", 14, "bold"))
+   update_label.place(x=80, y=400)
+
    #DB update-elése
    if column_index == 0:
     database_manager.curs.execute("UPDATE registration SET name = ? WHERE user_company_id = ?", (new_text, current_values[1],))
+    database_manager.curs.execute("UPDATE insertdata SET name = ? WHERE user_company_id = ?", (new_text, current_values[1],))
     database_manager.conn.commit()
+    update_label.configure(text="To make a full data change, user must log in again!", text_color=("#f09999"))
    elif column_index == 1:
     database_manager.curs.execute("UPDATE registration SET user_company_id = ? WHERE name = ?", (new_text, current_values[0],))
+    database_manager.curs.execute("UPDATE insertdata SET user_company_id = ? WHERE name = ?", (new_text, current_values[0],))
     database_manager.conn.commit()
+    update_label.configure(text="To make a full data change, user must log in again!", text_color=("#f09999"))
    else:
     database_manager.curs.execute("UPDATE registration SET class = ? WHERE user_company_id = ?", (new_text,current_values[1],))
     database_manager.conn.commit()
+    update_label.configure(text="To make a full data change, user must log in again!", text_color=("#f09999"))
 
    event.widget.destroy()

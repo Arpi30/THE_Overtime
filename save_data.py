@@ -88,6 +88,7 @@ def save_data():
   if Class == "A":
     file_menu.add_separator()
     file_menu.add_command(label="Edit profile",font="Helvetica 8 bold", command=lambda: edit_profile(get_fetched_id))
+    get_data(table)
     export_to_excel = CTkButton(add_data_frame,text="Export to excel", command=export_to_csv)
     export_to_excel.place(x=460, y=260)
     search_entry = CTkEntry(add_data_win, font=("Arial", 14), placeholder_text="Search")
@@ -151,8 +152,6 @@ def save_data():
   table.bind('<Button 1>', toggle_check)
   delete_data(calendar_start_entry, calendar_end_entry,start_hour, start_min, end_hour, end_min,reason_textBox,comment_textBox)
   get_data(table)
-  refresh = CTkButton(add_data_win, text="Refresh", command=get_data(table))
-  refresh.place(x=175, y=365)
   time()
   add_data_win.mainloop()
 
@@ -386,6 +385,7 @@ def focus_out(event):
    event.widget.destroy()
 
 def enter_pressed(event, table):
+    db_cols = ("row_id", "name", "team_group", "Start", "End", "month", "type", "reason", "comment", "negative_time", "counted_time", "approval")
     #Új szöveg
     new_text = event.widget.get()
 
@@ -401,8 +401,23 @@ def enter_pressed(event, table):
     table.item(selected_iid, values=current_values)
 
     #DB update-elése
-
+    for i, e in enumerate(db_cols):
+        try:
+            if i == column_index:
+                database_manager.curs.execute(f"UPDATE insertdata SET {e} = ? WHERE user_company_id = ?", (new_text,get_fetched_id,))
+                database_manager.conn.commit()
+                if column_index == 0:
+                    messagebox.showerror(title= "Error by Update", message="Row ID cannot be changed!!")
+                if column_index == 1:
+                    database_manager.curs.execute(f"UPDATE registration SET name = ? WHERE user_company_id = ?", (new_text,get_fetched_id,))
+                    database_manager.conn.commit()
+                if column_index == 2:
+                    database_manager.curs.execute(f"UPDATE insertdata SET team_group = ? WHERE user_company_id = ?", (new_text,get_fetched_id,))
+                    database_manager.conn.commit()
+        except sqlite3.Error as e:
+            messagebox.showerror(title= "Error by Update", message=f"Error: {e}")
     event.widget.destroy()
+    get_data(table)
 
 
 def logout(win):

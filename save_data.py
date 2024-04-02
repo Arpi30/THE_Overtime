@@ -88,7 +88,6 @@ def save_data():
   if Class == "A":
     file_menu.add_separator()
     file_menu.add_command(label="Edit profile",font="Helvetica 8 bold", command=lambda: edit_profile(get_fetched_id))
-    get_data(table)
     export_to_excel = CTkButton(add_data_frame,text="Export to excel", command=export_to_csv)
     export_to_excel.place(x=460, y=260)
     search_entry = CTkEntry(add_data_win, font=("Arial", 14), placeholder_text="Search")
